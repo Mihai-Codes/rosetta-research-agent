@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+import adalflow as adal  # noqa: E402  (load_dotenv must run first)
 from agents.base_agent import RegionalAgent
 from data.mcp_client import BinanceClient, CoinGeckoClient, DefiLlamaClient
 from reasoning.trace_schema import AgentRole, AssetClass, Region
@@ -42,12 +43,10 @@ class CryptoAgent(RegionalAgent):
     def __init__(
         self,
         *,
-        model_client: "adal.ModelClient | None" = None,
-        model_kwargs: "dict | None" = None,
+        model_client: adal.ModelClient | None = None,
+        model_kwargs: dict | None = None,
     ) -> None:
         import os
-        from typing import Any
-        import adalflow as adal  # noqa: F811
 
         if model_client is None:
             groq_key = os.environ.get("GROQ_API_KEY", "").strip()

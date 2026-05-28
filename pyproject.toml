@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "Multi-language AI financial research agent. Enterprise API for structured investment thesis generation across 5 regional desks."
 requires-python = ">=3.12"
 license = {text = "Proprietary"}
-authors = [{name = "Mihai Chindris", email = "mc146@students.quantic.edu"}]
+authors = [{name = "Mihai Chindris", email = "hello@mihai.codes"}]
 
 dependencies = [
     "fastapi>=0.115.0",
@@ -44,6 +44,12 @@ packages = ["src"]
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+
+[tool.ruff.lint]
+# E402: module-level import not at top — intentional in all agent/data files
+# because load_dotenv(override=True) must run before AdalFlow/provider client
+# imports so that API keys are available during module initialisation.
+ignore = ["E402"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
