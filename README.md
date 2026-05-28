@@ -2,9 +2,11 @@
 
 Multi-language AI financial research agent for enterprise deployment. Generates structured, verifiable investment theses across 5 regional desks via a clean REST API.
 
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![CI](https://github.com/Mihai-Codes/rosetta-research-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Mihai-Codes/rosetta-research-agent/actions/workflows/ci.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![AdalFlow](https://img.shields.io/badge/AdalFlow-SylphAI-purple)](https://github.com/SylphAI-Inc/AdalFlow)
+[![License: Proprietary](https://img.shields.io/badge/license-proprietary-red)](./LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](./Dockerfile)
 
 ## What This Is
@@ -150,4 +152,4 @@ This is a productized extraction from the hackathon project:
 
 ## License
 
-Proprietary. Contact mc146@students.quantic.edu for enterprise licensing.
+Proprietary. Contact [hello@mihai.codes](mailto:hello@mihai.codes) for enterprise licensing.
