@@ -22,7 +22,12 @@ from typing import Any
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+import asyncio
+import re
+
+from pydantic import BaseModel, Field, field_validator
+
+_TICKER_RE = re.compile(r"^[A-Za-z0-9._/-]{1,24}$")
 
 load_dotenv(override=True)
 
@@ -83,6 +88,17 @@ class AnalyzeRequest(BaseModel):
     language_override: str | None = Field(
         None, description="Override the reasoning language (e.g. 'en', 'zh', 'ja')"
     )
+    timeout_seconds: float = Field(default=120.0, ge=15.0, le=600.0)
+
+    @field_validator("ticker")
+    @classmethod
+    def _validate_ticker(cls, v: str) -> str:
+        symbol = v.strip().upper()
+        if not _TICKER_RE.fullmatch(symbol):
+            raise ValueError(
+                f"Invalid ticker '{v}'. Allowed: letters, digits, ., _, /, -, max 24 chars."
+            )
+        return symbol
 
 
 class AnalyzeResponse(BaseModel):
@@ -210,7 +226,10 @@ async def analyze(request: AnalyzeRequest):
 
     try:
         agent = _get_agent(request.desk)
-        thesis = await agent.analyze(request.ticker)
+        thesis = await asyncio.wait_for(
+            agent.analyze(request.ticker),
+            timeout=request.timeout_seconds,
+        )
 
         # Optionally pin to IPFS
         ipfs_cid = None
@@ -247,6 +266,11 @@ async def analyze(request: AnalyzeRequest):
 
         return response
 
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"Analysis timed out after {request.timeout_seconds:.0f}s for {request.ticker} on {request.desk} desk",
+        )
     except Exception as exc:
         logger.exception("Analysis failed for %s on %s desk", request.ticker, request.desk)
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(exc)}")
