@@ -57,7 +57,7 @@ class GeminiClient(ModelClient):
         from google import genai as google_genai
 
         kwargs = dict(api_kwargs or {})
-        model  = kwargs.pop("model", "gemini-2.5-flash")
+        model = kwargs.pop("model", "gemini-2.5-flash")
         prompt = kwargs.pop("prompt", "")
         config_kwargs: dict[str, Any] = {}
         if "temperature" in kwargs:
@@ -84,6 +84,7 @@ class GeminiClient(ModelClient):
     ) -> Any:
         """Async call — runs blocking call in thread pool."""
         import asyncio
+
         return await asyncio.to_thread(self.call, api_kwargs, model_type)
 
     def parse_chat_completion(self, completion: Any) -> Any:
@@ -94,6 +95,7 @@ class GeminiClient(ModelClient):
         runs it through its output_processors to populate data.
         """
         from adalflow.core.types import GeneratorOutput
+
         try:
             text = completion.text if hasattr(completion, "text") else str(completion)
             return GeneratorOutput(data=None, error=None, raw_response=text)

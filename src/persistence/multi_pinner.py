@@ -37,6 +37,7 @@ def _is_retryable(exc: BaseException) -> bool:
         return exc.response.status_code >= 500
     return isinstance(exc, (httpx.TransportError, httpx.TimeoutException))
 
+
 logger = logging.getLogger(__name__)
 
 PINATA_FILE_API_URL = "https://api.pinata.cloud/pinning/pinFileToIPFS"
@@ -80,8 +81,7 @@ class PinReceipt:
 class Pinner(Protocol):
     """Protocol for IPFS pinning providers."""
 
-    async def pin_json(self, payload: dict[str, Any], *, name: str | None = None) -> PinReceipt:
-        ...
+    async def pin_json(self, payload: dict[str, Any], *, name: str | None = None) -> PinReceipt: ...
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +100,11 @@ class PinataPinner:
     def __init__(self, jwt: str | None = None):
         self.jwt = jwt or os.getenv("PINATA_JWT", "").strip()
 
-    @retry(retry=retry_if_exception(_is_retryable), stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=8))
+    @retry(
+        retry=retry_if_exception(_is_retryable),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=8),
+    )
     async def _pin(self, canonical_bytes: bytes, name: str | None) -> dict[str, Any]:
         headers = {"Authorization": f"Bearer {self.jwt}"}
         # pinFileToIPFS uses multipart form data
@@ -171,7 +175,11 @@ class StorachaPinner:
             sidecar_url or os.getenv("STORACHA_SIDECAR_URL", "http://localhost:3030")
         ).rstrip("/")
 
-    @retry(retry=retry_if_exception(_is_retryable), stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=8))
+    @retry(
+        retry=retry_if_exception(_is_retryable),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=8),
+    )
     async def _upload(self, canonical_bytes: bytes, name: str | None) -> dict[str, Any]:
         headers = {"Content-Type": "application/octet-stream"}
         if name:

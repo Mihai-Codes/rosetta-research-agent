@@ -84,8 +84,7 @@ class ReasoningBlock(BaseModel):
         description="Short description of what this sub-agent consumed (e.g. '10-Q for AAPL Q1-2026')."
     )
     thought_process: str | None = Field(
-        default=None,
-        description="Internal Chain-of-Thought / Thinking trace (R1-style)."
+        default=None, description="Internal Chain-of-Thought / Thinking trace (R1-style)."
     )
     analysis: str = Field(description="The reasoning/analysis in the agent's working language.")
     analysis_en: str | None = Field(
@@ -122,7 +121,9 @@ class InvestmentThesis(BaseModel):
     ticker_or_asset: str = Field(description="e.g. 'AAPL', '600519.SH', 'BTC', 'EUR/USD'.")
 
     # Headline
-    thesis_summary_en: str = Field(description="Always English. Translated if produced non-natively.")
+    thesis_summary_en: str = Field(
+        description="Always English. Translated if produced non-natively."
+    )
     thesis_summary_native: str | None = Field(
         default=None, description="In the agent's working language if not English."
     )

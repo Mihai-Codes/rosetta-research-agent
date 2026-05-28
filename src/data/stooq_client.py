@@ -96,9 +96,7 @@ class StooqClient:
     Only provides daily OHLCV — no fundamentals, no news.
     """
 
-    async def get_daily(
-        self, ticker: str, period: str = "10d"
-    ) -> list[dict[str, Any]]:
+    async def get_daily(self, ticker: str, period: str = "10d") -> list[dict[str, Any]]:
         """Fetch recent OHLCV bars for *ticker* (Yahoo Finance format).
 
         Translates ticker to Stooq format internally.
@@ -132,7 +130,9 @@ class StooqClient:
 
         try:
             result = await asyncio.to_thread(_fetch)
-            logger.info("Stooq fallback get_daily(%s → %s): %d rows", ticker, stooq_ticker, len(result))
+            logger.info(
+                "Stooq fallback get_daily(%s → %s): %d rows", ticker, stooq_ticker, len(result)
+            )
             return result
         except Exception as exc:  # noqa: BLE001
             logger.warning("Stooq get_daily(%s → %s) failed: %s", ticker, stooq_ticker, exc)
@@ -165,9 +165,7 @@ async def _main() -> None:
     import json
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--ticker", default="7203.T", help="Yahoo-format ticker e.g. 7203.T, MC.PA"
-    )
+    parser.add_argument("--ticker", default="7203.T", help="Yahoo-format ticker e.g. 7203.T, MC.PA")
     args = parser.parse_args()
 
     client = StooqClient()

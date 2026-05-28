@@ -27,7 +27,6 @@ from abc import abstractmethod
 from typing import Any
 
 import json
-import os
 import re
 from pathlib import Path
 from typing import TypeVar
@@ -107,7 +106,7 @@ class PydanticJsonParser(adal.DataComponent):
         raw = raw.strip()
         if raw.startswith("```"):
             # handles ```json, ```JSON, ``` (no lang tag)
-            raw = raw[3:]                      # strip opening ```
+            raw = raw[3:]  # strip opening ```
             if raw.startswith("json") or raw.startswith("JSON"):
                 raw = raw[4:]
             # strip closing ```
@@ -136,7 +135,10 @@ class PydanticJsonParser(adal.DataComponent):
             if self.model_class.__name__ == "InvestmentThesis":
                 data["reasoning_blocks"] = []
                 # Clamp time_horizon_days to minimum 1 (schema requires gt=0)
-                if data.get("time_horizon_days") is not None and int(data.get("time_horizon_days", 1)) < 1:
+                if (
+                    data.get("time_horizon_days") is not None
+                    and int(data.get("time_horizon_days", 1)) < 1
+                ):
                     data["time_horizon_days"] = 1
             # Strip unknown fields to prevent extra="forbid" crashes from LLM hallucinations.
             # The schema is strict by design (no junk in IPFS), but we sanitize at parse time.
@@ -315,12 +317,18 @@ class RegionalAgent(adal.Component):
         extra_fields: dict[str, Any] | None = None,
     ) -> BaseModel | None:
         """Run exactly one JSON-repair pass, then parse again. Fail closed on error."""
-        raw = getattr(output, "raw_response", None) or getattr(output, "data", None) or str(output or "")
+        raw = (
+            getattr(output, "raw_response", None)
+            or getattr(output, "data", None)
+            or str(output or "")
+        )
         try:
             repaired_output = self.json_repair(
                 prompt_kwargs={
                     "schema_name": parser.model_class.__name__,
-                    "schema_json": json.dumps(parser.model_class.model_json_schema(), ensure_ascii=False),
+                    "schema_json": json.dumps(
+                        parser.model_class.model_json_schema(), ensure_ascii=False
+                    ),
                     "raw_output": _sanitize_untrusted_text(raw, max_len=16000),
                 }
             )
@@ -384,7 +392,10 @@ class RegionalAgent(adal.Component):
                     _wait = 2 ** (_sub_attempt + 2)
                     logger.warning(
                         "Sub-agent 503 for %s/%s — retrying in %ds (attempt %d/3)",
-                        role.value, safe_ticker, _wait, _sub_attempt + 1,
+                        role.value,
+                        safe_ticker,
+                        _wait,
+                        _sub_attempt + 1,
                     )
                     await asyncio.sleep(_wait)
                     continue
@@ -398,7 +409,7 @@ class RegionalAgent(adal.Component):
                     extra_fields={"agent_role": role.value},
                 )
             if not isinstance(block, ReasoningBlock):
-                raw_snippet = (getattr(block_output, 'raw_response', None) or '')[:300]
+                raw_snippet = (getattr(block_output, "raw_response", None) or "")[:300]
                 raise RuntimeError(
                     f"{role} sub-agent failed to produce a ReasoningBlock after one repair pass. "
                     f"raw: {raw_snippet}"
@@ -430,12 +441,15 @@ class RegionalAgent(adal.Component):
             "learned_guidelines": _sanitize_untrusted_text(_guidelines_str, max_len=4000),
         }
         import asyncio as _asyncio
+
         thesis_output = None
         for _attempt in range(3):
             thesis_output = self.synthesizer(prompt_kwargs=synthesis_kwargs)
             if getattr(thesis_output, "error", None) and "503" in str(thesis_output.error):
                 wait = 2 ** (_attempt + 2)  # 4s, 8s, 16s
-                logger.warning("Synthesizer 503 — retrying in %ds (attempt %d/3)", wait, _attempt + 1)
+                logger.warning(
+                    "Synthesizer 503 — retrying in %ds (attempt %d/3)", wait, _attempt + 1
+                )
                 await _asyncio.sleep(wait)
                 continue
             break
@@ -450,7 +464,7 @@ class RegionalAgent(adal.Component):
                 extra_fields={"region": self.region.value, "ticker_or_asset": safe_ticker},
             )
         if not isinstance(thesis, InvestmentThesis):
-            raw_snippet = (getattr(thesis_output, 'raw_response', None) or '')[:300]
+            raw_snippet = (getattr(thesis_output, "raw_response", None) or "")[:300]
             raise RuntimeError(f"Synthesizer failed after one repair pass. raw: {raw_snippet}")
 
         # 3. Splice the sub-agent blocks back in (synthesizer may have summarized them).
@@ -463,6 +477,7 @@ class RegionalAgent(adal.Component):
         entry_price_1e8: int | None = None
         try:
             from data.yfinance_client import YFinanceClient as _YFC
+
             # Normalize ticker for yfinance:
             # - Tushare .SH → Yahoo .SS  (Shanghai A-shares)
             # - Bare crypto symbols (BTC, ETH) → BTC-USD, ETH-USD
@@ -472,7 +487,12 @@ class RegionalAgent(adal.Component):
             price = await _YFC().get_current_price(_yf_ticker)
             if price and price > 0:
                 entry_price_1e8 = int(price * 1e8)
-                logger.debug("Live price for %s: %.4f → entry_price_1e8=%d", _yf_ticker, price, entry_price_1e8)
+                logger.debug(
+                    "Live price for %s: %.4f → entry_price_1e8=%d",
+                    _yf_ticker,
+                    price,
+                    entry_price_1e8,
+                )
         except Exception as _price_exc:
             logger.debug("Price fetch skipped for %s: %s", safe_ticker, _price_exc)
 

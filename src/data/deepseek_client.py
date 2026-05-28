@@ -62,6 +62,7 @@ class DeepSeekClient(ModelClient):
         model_type: Any = None,
     ) -> Any:
         import asyncio
+
         return await asyncio.to_thread(self.call, api_kwargs, model_type)
 
     def parse_chat_completion(self, completion: Any) -> GeneratorOutput:

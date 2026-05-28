@@ -20,7 +20,7 @@ import argparse
 import asyncio
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
 
 from dotenv import load_dotenv
@@ -77,11 +77,13 @@ class TranslatorAgent(adal.Component):
     ) -> None:
         super().__init__()
         client = model_client or adal.GroqAPIClient()  # type: ignore[attr-defined]
-        kwargs = model_kwargs or {"model": "llama-3.3-70b-versatile", "temperature": 0.1, "max_tokens": 1024}
+        kwargs = model_kwargs or {
+            "model": "llama-3.3-70b-versatile",
+            "temperature": 0.1,
+            "max_tokens": 1024,
+        }
 
-        schema_str = json.dumps(
-            PredictionMarketQuestion.model_json_schema(), indent=2
-        )
+        schema_str = json.dumps(PredictionMarketQuestion.model_json_schema(), indent=2)
         template = _TRANSLATOR_TEMPLATE.replace("{{schema}}", schema_str)
 
         self._generator = adal.Generator(
@@ -130,8 +132,10 @@ class TranslatorAgent(adal.Component):
         )
 
         if not isinstance(question, PredictionMarketQuestion):
-            logger.warning("TranslatorAgent failed to parse PredictionMarketQuestion. raw: %s",
-                           getattr(output, "raw_response", "")[:300])
+            logger.warning(
+                "TranslatorAgent failed to parse PredictionMarketQuestion. raw: %s",
+                getattr(output, "raw_response", "")[:300],
+            )
             return None
 
         return question
@@ -148,7 +152,7 @@ class TranslatorAgent(adal.Component):
 
 
 async def _main() -> None:
-    from reasoning.trace_schema import AssetClass, Direction, Region
+    from reasoning.trace_schema import AssetClass, Region
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--ticker", default="AAPL")
@@ -161,7 +165,6 @@ async def _main() -> None:
     )
 
     # Construct a dummy thesis for smoke-testing
-    from datetime import datetime, timezone
     thesis = InvestmentThesis(
         ticker=args.ticker,
         region=Region.US,

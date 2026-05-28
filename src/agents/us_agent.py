@@ -58,10 +58,15 @@ class USAgent(RegionalAgent):
             if groq_key:
                 model_client = adal.GroqAPIClient()  # type: ignore[attr-defined]
                 if model_kwargs is None:
-                    model_kwargs = {"model": "llama-3.3-70b-versatile", "temperature": 0.2, "max_tokens": 2048}
+                    model_kwargs = {
+                        "model": "llama-3.3-70b-versatile",
+                        "temperature": 0.2,
+                        "max_tokens": 2048,
+                    }
             elif gemini_key:
                 logger.warning("GROQ_API_KEY not set — falling back to Gemini for US desk")
                 from data.gemini_client import GeminiClient
+
                 _gemini_model = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
                 model_client = GeminiClient(api_key=gemini_key)
                 if model_kwargs is None:

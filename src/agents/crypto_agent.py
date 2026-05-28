@@ -32,8 +32,8 @@ class CryptoAgent(RegionalAgent):
     working_language = "en"
     sub_agent_roles = (
         AgentRole.FUNDAMENTAL_ANALYST,  # on-chain metrics, tokenomics
-        AgentRole.SENTIMENT_ANALYST,    # market sentiment, news
-        AgentRole.MACRO_ANALYST,        # DeFi ecosystem, TVL trends
+        AgentRole.SENTIMENT_ANALYST,  # market sentiment, news
+        AgentRole.MACRO_ANALYST,  # DeFi ecosystem, TVL trends
     )
 
     @property
@@ -54,10 +54,15 @@ class CryptoAgent(RegionalAgent):
             if groq_key:
                 model_client = adal.GroqAPIClient()  # type: ignore[attr-defined]
                 if model_kwargs is None:
-                    model_kwargs = {"model": "llama-3.3-70b-versatile", "temperature": 0.2, "max_tokens": 2048}
+                    model_kwargs = {
+                        "model": "llama-3.3-70b-versatile",
+                        "temperature": 0.2,
+                        "max_tokens": 2048,
+                    }
             elif gemini_key:
                 logger.warning("GROQ_API_KEY not set — falling back to Gemini for Crypto desk")
                 from data.gemini_client import GeminiClient
+
                 _gemini_model = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
                 model_client = GeminiClient(api_key=gemini_key)
                 if model_kwargs is None:
@@ -107,9 +112,7 @@ class CryptoAgent(RegionalAgent):
             coin_task = cg.get_coin(cg_id)
             # DefiLlama protocol slug often matches CoinGecko id — soft-fail if not
             protocol_task = dl.get_protocol(dl_slug)
-            coin, protocol = await asyncio.gather(
-                coin_task, protocol_task, return_exceptions=True
-            )
+            coin, protocol = await asyncio.gather(coin_task, protocol_task, return_exceptions=True)
 
         # ---- Binance fallback when CoinGecko is rate-limited or down ----
         binance_ticker: dict | None = None
@@ -129,16 +132,19 @@ class CryptoAgent(RegionalAgent):
         # ---- fundamental: tokenomics + market data from CoinGecko (or Binance) ----
         if isinstance(coin, Exception):
             if binance_ticker:
-                fundamental_data = json.dumps({
-                    "source": "Binance (CoinGecko unavailable)",
-                    "symbol": binance_ticker.get("symbol"),
-                    "lastPrice": binance_ticker.get("lastPrice"),
-                    "priceChangePercent": binance_ticker.get("priceChangePercent"),
-                    "quoteVolume": binance_ticker.get("quoteVolume"),
-                    "highPrice": binance_ticker.get("highPrice"),
-                    "lowPrice": binance_ticker.get("lowPrice"),
-                    "recent_daily_ohlcv": binance_klines,
-                }, indent=2)[:4000]
+                fundamental_data = json.dumps(
+                    {
+                        "source": "Binance (CoinGecko unavailable)",
+                        "symbol": binance_ticker.get("symbol"),
+                        "lastPrice": binance_ticker.get("lastPrice"),
+                        "priceChangePercent": binance_ticker.get("priceChangePercent"),
+                        "quoteVolume": binance_ticker.get("quoteVolume"),
+                        "highPrice": binance_ticker.get("highPrice"),
+                        "lowPrice": binance_ticker.get("lowPrice"),
+                        "recent_daily_ohlcv": binance_klines,
+                    },
+                    indent=2,
+                )[:4000]
             else:
                 fundamental_data = f"[CoinGecko ERROR: {coin}] [Binance fallback unavailable]"
         else:
@@ -181,12 +187,15 @@ class CryptoAgent(RegionalAgent):
         # ---- sentiment: derive from CoinGecko community + market sentiment ----
         if isinstance(coin, Exception):
             if binance_ticker:
-                sentiment_data = json.dumps({
-                    "source": "Binance (CoinGecko unavailable)",
-                    "priceChangePercent_24h": binance_ticker.get("priceChangePercent"),
-                    "count": binance_ticker.get("count"),  # number of trades
-                    "weightedAvgPrice": binance_ticker.get("weightedAvgPrice"),
-                }, indent=2)
+                sentiment_data = json.dumps(
+                    {
+                        "source": "Binance (CoinGecko unavailable)",
+                        "priceChangePercent_24h": binance_ticker.get("priceChangePercent"),
+                        "count": binance_ticker.get("count"),  # number of trades
+                        "weightedAvgPrice": binance_ticker.get("weightedAvgPrice"),
+                    },
+                    indent=2,
+                )
             else:
                 sentiment_data = "[No sentiment data — CoinGecko and Binance both unavailable]"
         else:
@@ -197,7 +206,12 @@ class CryptoAgent(RegionalAgent):
                     "community_data": coin.get("community_data", {}),
                     "developer_data": {
                         k: coin.get("developer_data", {}).get(k)
-                        for k in ["stars", "forks", "pull_request_contributors", "commit_count_4_weeks"]
+                        for k in [
+                            "stars",
+                            "forks",
+                            "pull_request_contributors",
+                            "commit_count_4_weeks",
+                        ]
                     },
                 },
                 indent=2,

@@ -258,7 +258,9 @@ async def analyze(request: AnalyzeRequest):
             thesis_summary_en=thesis.thesis_summary_en,
             reasoning_blocks=[b.model_dump(mode="json") for b in thesis.reasoning_blocks],
             timestamp=thesis.timestamp.isoformat(),
-            model_used=getattr(agent, "model_name", None) if isinstance(getattr(agent, "model_name", None), str) else "unknown",
+            model_used=getattr(agent, "model_name", None)
+            if isinstance(getattr(agent, "model_name", None), str)
+            else "unknown",
             ipfs_cid=ipfs_cid,
             processing_time_ms=processing_time,
         )
@@ -295,18 +297,23 @@ def _get_agent(desk: str):
     """Lazy-load the appropriate regional agent."""
     if desk == "us":
         from src.agents.us_agent import USAgent
+
         return USAgent()
     elif desk == "china":
         from src.agents.china_agent import ChinaAgent
+
         return ChinaAgent()
     elif desk == "eu":
         from src.agents.eu_agent import EUAgent
+
         return EUAgent()
     elif desk == "japan":
         from src.agents.japan_agent import JapanAgent
+
         return JapanAgent()
     elif desk == "crypto":
         from src.agents.crypto_agent import CryptoAgent
+
         return CryptoAgent()
     else:
         raise ValueError(f"Unknown desk: {desk}")

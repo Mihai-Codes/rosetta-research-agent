@@ -31,6 +31,7 @@ class MCPClientError(RuntimeError):
 
 class RateLimitError(MCPClientError):
     """Raised on HTTP 429 — signals the caller to back off."""
+
     pass
 
 
@@ -123,8 +124,13 @@ class CoinGeckoClient(MCPClient):
         """Lightweight price call — much cheaper quota-wise than full /coins/{id}."""
         return await self.get(
             "simple/price",
-            params={"ids": coin_id, "vs_currencies": "usd", "include_market_cap": "true",
-                    "include_24hr_vol": "true", "include_24hr_change": "true"},
+            params={
+                "ids": coin_id,
+                "vs_currencies": "usd",
+                "include_market_cap": "true",
+                "include_24hr_vol": "true",
+                "include_24hr_change": "true",
+            },
         )
 
 

@@ -53,11 +53,23 @@ class YFinanceClient:
                 info = yf.Ticker(ticker).info
                 # Keep only the most useful fields to avoid context bloat
                 keys = [
-                    "shortName", "sector", "industry", "country",
-                    "marketCap", "trailingPE", "forwardPE", "trailingEps",
-                    "revenueGrowth", "grossMargins", "operatingMargins",
-                    "returnOnEquity", "debtToEquity", "currentRatio",
-                    "52WeekChange", "beta", "dividendYield",
+                    "shortName",
+                    "sector",
+                    "industry",
+                    "country",
+                    "marketCap",
+                    "trailingPE",
+                    "forwardPE",
+                    "trailingEps",
+                    "revenueGrowth",
+                    "grossMargins",
+                    "operatingMargins",
+                    "returnOnEquity",
+                    "debtToEquity",
+                    "currentRatio",
+                    "52WeekChange",
+                    "beta",
+                    "dividendYield",
                     "longBusinessSummary",
                 ]
                 return {k: info.get(k) for k in keys if info.get(k) is not None}
@@ -101,7 +113,10 @@ class YFinanceClient:
             def _fetch() -> list[dict[str, Any]]:
                 items = yf.Ticker(ticker).news or []
                 return [
-                    {"title": n.get("content", {}).get("title", ""), "link": n.get("content", {}).get("canonicalUrl", {}).get("url", "")}
+                    {
+                        "title": n.get("content", {}).get("title", ""),
+                        "link": n.get("content", {}).get("canonicalUrl", {}).get("url", ""),
+                    }
                     for n in items[:8]
                 ]
 

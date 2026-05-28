@@ -119,6 +119,7 @@ class JapanAgent(RegionalAgent):
             gemini_key = os.environ.get("GEMINI_API_KEY", "")
             if gemini_key:
                 from data.gemini_client import GeminiClient
+
                 model_client = GeminiClient(api_key=gemini_key)
                 if model_kwargs is None:
                     model_kwargs = {"model": _GEMINI_MODEL, "temperature": 0.2, "max_tokens": 2048}
@@ -126,7 +127,11 @@ class JapanAgent(RegionalAgent):
                 logger.warning("GEMINI_API_KEY not set — falling back to Groq for JP desk")
                 model_client = adal.GroqAPIClient()  # type: ignore[attr-defined]
                 if model_kwargs is None:
-                    model_kwargs = {"model": "llama-3.3-70b-versatile", "temperature": 0.2, "max_tokens": 2048}
+                    model_kwargs = {
+                        "model": "llama-3.3-70b-versatile",
+                        "temperature": 0.2,
+                        "max_tokens": 2048,
+                    }
 
         if model_kwargs is None:
             model_kwargs = {"model": _GEMINI_MODEL, "temperature": 0.2, "max_tokens": 2048}

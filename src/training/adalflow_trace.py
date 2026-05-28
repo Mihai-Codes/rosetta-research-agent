@@ -31,15 +31,14 @@ from __future__ import annotations
 
 import json
 import logging
-import os
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import adalflow as adal
 
-from reasoning.trace_schema import Direction, InvestmentThesis, Region, TraceMetadata
+from reasoning.trace_schema import InvestmentThesis, TraceMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +55,7 @@ DATASET_PATH = _DATASET_DIR / "rosetta_dataset.jsonl"
 # Designed as an AdalFlow DataClass for compatibility with BootstrapFewShot.
 # ---------------------------------------------------------------------------
 
+
 @adal.dataclass(eq=True, unsafe_hash=True)
 class RosettaTraceRecord(adal.DataClass):
     """A single training example: reasoning trace → market outcome.
@@ -65,44 +65,59 @@ class RosettaTraceRecord(adal.DataClass):
     """
 
     # ── Identity ────────────────────────────────────────────────────────────
-    trace_hash:    str = field(default="", metadata={"desc": "SHA-256 of the thesis JSON"})
-    ipfs_cid:      str = field(default="", metadata={"desc": "IPFS CID of the full trace"})
-    arc_tx:        str = field(default="", metadata={"desc": "Arc on-chain record TX hash"})
-    market_tx:     str = field(default="", metadata={"desc": "PredictionMarket create TX hash"})
+    trace_hash: str = field(default="", metadata={"desc": "SHA-256 of the thesis JSON"})
+    ipfs_cid: str = field(default="", metadata={"desc": "IPFS CID of the full trace"})
+    arc_tx: str = field(default="", metadata={"desc": "Arc on-chain record TX hash"})
+    market_tx: str = field(default="", metadata={"desc": "PredictionMarket create TX hash"})
     run_timestamp: str = field(default="", metadata={"desc": "ISO-8601 UTC timestamp of the run"})
 
     # ── Input features ──────────────────────────────────────────────────────
-    ticker:        str   = field(default="", metadata={"desc": "Asset ticker"})
-    region:        str   = field(default="", metadata={"desc": "Region enum value"})
-    language:      str   = field(default="en", metadata={"desc": "Native analysis language"})
+    ticker: str = field(default="", metadata={"desc": "Asset ticker"})
+    region: str = field(default="", metadata={"desc": "Region enum value"})
+    language: str = field(default="en", metadata={"desc": "Native analysis language"})
     entry_price_usd: float = field(default=0.0, metadata={"desc": "Asset price at thesis creation"})
-    data_context:  str   = field(default="", metadata={"desc": "Raw data passed to agent (truncated to 2k chars)"})
+    data_context: str = field(
+        default="", metadata={"desc": "Raw data passed to agent (truncated to 2k chars)"}
+    )
 
     # ── Reasoning trace (the product) ───────────────────────────────────────
-    thought_process:    str = field(default="", metadata={"desc": "R1-style chain-of-thought reasoning"})
-    thesis_summary_en:  str = field(default="", metadata={"desc": "English thesis summary"})
-    thesis_summary_native: str = field(default="", metadata={"desc": "Native-language thesis summary"})
-    key_risks:          str = field(default="", metadata={"desc": "Comma-separated key risks"})
+    thought_process: str = field(
+        default="", metadata={"desc": "R1-style chain-of-thought reasoning"}
+    )
+    thesis_summary_en: str = field(default="", metadata={"desc": "English thesis summary"})
+    thesis_summary_native: str = field(
+        default="", metadata={"desc": "Native-language thesis summary"}
+    )
+    key_risks: str = field(default="", metadata={"desc": "Comma-separated key risks"})
 
     # ── Output labels ───────────────────────────────────────────────────────
-    direction:       str   = field(default="", metadata={"desc": "LONG / SHORT / NEUTRAL"})
-    confidence:      float = field(default=0.0, metadata={"desc": "Confidence score 0–1"})
-    horizon_days:    int   = field(default=30,  metadata={"desc": "Time horizon in days"})
+    direction: str = field(default="", metadata={"desc": "LONG / SHORT / NEUTRAL"})
+    confidence: float = field(default=0.0, metadata={"desc": "Confidence score 0–1"})
+    horizon_days: int = field(default=30, metadata={"desc": "Time horizon in days"})
 
     # ── Market outcome (filled by settler) ──────────────────────────────────
-    was_correct:     bool | None  = field(default=None, metadata={"desc": "True if market resolved correctly"})
-    exit_price_usd:  float | None = field(default=None, metadata={"desc": "Asset price at settlement"})
-    price_change_pct: float | None = field(default=None, metadata={"desc": "% price change entry→exit"})
-    settled_at:      str | None   = field(default=None, metadata={"desc": "ISO-8601 UTC settlement timestamp"})
+    was_correct: bool | None = field(
+        default=None, metadata={"desc": "True if market resolved correctly"}
+    )
+    exit_price_usd: float | None = field(
+        default=None, metadata={"desc": "Asset price at settlement"}
+    )
+    price_change_pct: float | None = field(
+        default=None, metadata={"desc": "% price change entry→exit"}
+    )
+    settled_at: str | None = field(
+        default=None, metadata={"desc": "ISO-8601 UTC settlement timestamp"}
+    )
 
     # AdalFlow few-shot interface
-    __input_fields__  = ["ticker", "region", "data_context", "thought_process", "thesis_summary_en"]
+    __input_fields__ = ["ticker", "region", "data_context", "thought_process", "thesis_summary_en"]
     __output_fields__ = ["direction", "confidence", "was_correct"]
 
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -139,6 +154,7 @@ def _write_all_records(records: list[dict[str, Any]]) -> None:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def log_thesis_run(
     thesis: InvestmentThesis,
     metadata: TraceMetadata,
@@ -172,28 +188,28 @@ def log_thesis_run(
     risks = ", ".join(thesis.key_risks) if thesis.key_risks else ""
 
     record = RosettaTraceRecord(
-        trace_hash    = metadata.trace_hash,
-        ipfs_cid      = metadata.ipfs_cid or "",
-        arc_tx        = getattr(metadata, "arc_tx", "") or "",
-        market_tx     = market_tx or "",
-        run_timestamp = _now_iso(),
-        ticker        = thesis.ticker_or_asset,
-        region        = metadata.region.value,
-        language      = thesis.language.value if thesis.language else "en",
-        entry_price_usd = (thesis.entry_price_1e8 / 1e8) if thesis.entry_price_1e8 else 0.0,
-        data_context  = _truncate(data_context),
-        thought_process    = _truncate(thought, 4000),
-        thesis_summary_en  = thesis.thesis_summary_en or "",
-        thesis_summary_native = thesis.thesis_summary_native or "",
-        key_risks     = risks,
-        direction     = thesis.direction.value,
-        confidence    = thesis.confidence_score,
-        horizon_days  = int(thesis.time_horizon_days),
+        trace_hash=metadata.trace_hash,
+        ipfs_cid=metadata.ipfs_cid or "",
+        arc_tx=getattr(metadata, "arc_tx", "") or "",
+        market_tx=market_tx or "",
+        run_timestamp=_now_iso(),
+        ticker=thesis.ticker_or_asset,
+        region=metadata.region.value,
+        language=thesis.language.value if thesis.language else "en",
+        entry_price_usd=(thesis.entry_price_1e8 / 1e8) if thesis.entry_price_1e8 else 0.0,
+        data_context=_truncate(data_context),
+        thought_process=_truncate(thought, 4000),
+        thesis_summary_en=thesis.thesis_summary_en or "",
+        thesis_summary_native=thesis.thesis_summary_native or "",
+        key_risks=risks,
+        direction=thesis.direction.value,
+        confidence=thesis.confidence_score,
+        horizon_days=int(thesis.time_horizon_days),
         # outcome fields — filled later by settler
-        was_correct   = None,
-        exit_price_usd = None,
-        price_change_pct = None,
-        settled_at    = None,
+        was_correct=None,
+        exit_price_usd=None,
+        price_change_pct=None,
+        settled_at=None,
     )
 
     # Append to JSONL
@@ -239,10 +255,10 @@ def update_outcome(
             if exit_price_usd and entry > 0:
                 pct_change = (exit_price_usd - entry) / entry * 100
 
-            rec["was_correct"]      = was_correct
-            rec["exit_price_usd"]   = exit_price_usd
+            rec["was_correct"] = was_correct
+            rec["exit_price_usd"] = exit_price_usd
             rec["price_change_pct"] = pct_change
-            rec["settled_at"]       = _now_iso()
+            rec["settled_at"] = _now_iso()
             updated = True
             break
 
@@ -307,12 +323,12 @@ def dataset_stats() -> dict[str, Any]:
     accuracy = len(correct) / len(labeled) if labeled else None
 
     return {
-        "total":        len(records),
-        "labeled":      len(labeled),
-        "unlabeled":    len(records) - len(labeled),
-        "correct":      len(correct),
-        "accuracy":     round(accuracy * 100, 1) if accuracy is not None else None,
-        "by_region":    by_region,
+        "total": len(records),
+        "labeled": len(labeled),
+        "unlabeled": len(records) - len(labeled),
+        "correct": len(correct),
+        "accuracy": round(accuracy * 100, 1) if accuracy is not None else None,
+        "by_region": by_region,
         "dataset_path": str(DATASET_PATH),
     }
 
@@ -320,6 +336,7 @@ def dataset_stats() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # CLI — quick inspection
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     """python -m training.adalflow_trace [--stats] [--labeled]"""
@@ -343,7 +360,7 @@ def main() -> None:
         outcome = "✅" if rec.was_correct else ("❌" if rec.was_correct is False else "⏳")
         print(
             f"  {outcome} {rec.ticker:12s} {rec.region:6s} {rec.direction:8s} "
-            f"conf={rec.confidence*100:.0f}%  {rec.run_timestamp[:10]}"
+            f"conf={rec.confidence * 100:.0f}%  {rec.run_timestamp[:10]}"
         )
 
 

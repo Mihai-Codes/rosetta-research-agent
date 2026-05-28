@@ -33,20 +33,20 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _REGION_TO_UINT8: dict[Region, int] = {
-    Region.US:     0,
-    Region.CN:     1,
-    Region.EU:     2,
-    Region.JP:     3,
+    Region.US: 0,
+    Region.CN: 1,
+    Region.EU: 2,
+    Region.JP: 3,
     Region.CRYPTO: 4,
 }
 
 _ASSET_CLASS_TO_UINT8: dict[AssetClass, int] = {
-    AssetClass.EQUITY:       0,
+    AssetClass.EQUITY: 0,
     AssetClass.FIXED_INCOME: 1,
-    AssetClass.COMMODITY:    2,
-    AssetClass.CRYPTO:       3,
-    AssetClass.FX:           4,
-    AssetClass.REAL_ESTATE:  5,
+    AssetClass.COMMODITY: 2,
+    AssetClass.CRYPTO: 3,
+    AssetClass.FX: 4,
+    AssetClass.REAL_ESTATE: 5,
 }
 
 # Minimal ABI for RosettaToken stake() + balanceOf() + stakedBalance()
@@ -83,8 +83,8 @@ _DEFAULT_STAKE = 10 * 10**18
 # ---------------------------------------------------------------------------
 
 _DIRECTION_TO_UINT8: dict[Direction, int] = {
-    Direction.LONG:    0,
-    Direction.SHORT:   1,
+    Direction.LONG: 0,
+    Direction.SHORT: 1,
     Direction.NEUTRAL: 2,
 }
 
@@ -95,14 +95,14 @@ _MARKET_ABI: list[dict[str, Any]] = [
         "type": "function",
         "stateMutability": "nonpayable",
         "inputs": [
-            {"name": "traceHash",    "type": "bytes32"},
-            {"name": "agent",        "type": "address"},
-            {"name": "stakeAmount",  "type": "uint256"},
-            {"name": "assetKey",     "type": "bytes32"},
-            {"name": "direction",    "type": "uint8"},
+            {"name": "traceHash", "type": "bytes32"},
+            {"name": "agent", "type": "address"},
+            {"name": "stakeAmount", "type": "uint256"},
+            {"name": "assetKey", "type": "bytes32"},
+            {"name": "direction", "type": "uint8"},
             {"name": "confidenceBp", "type": "uint16"},
-            {"name": "entryPrice",   "type": "uint256"},
-            {"name": "horizonDays",  "type": "uint32"},
+            {"name": "entryPrice", "type": "uint256"},
+            {"name": "horizonDays", "type": "uint32"},
         ],
         "outputs": [],
     },
@@ -120,9 +120,9 @@ _RECORD_ABI: list[dict[str, Any]] = [
         "type": "function",
         "stateMutability": "nonpayable",
         "inputs": [
-            {"name": "traceHash",  "type": "bytes32"},
-            {"name": "ipfsCid",    "type": "string"},
-            {"name": "region",     "type": "uint8"},
+            {"name": "traceHash", "type": "bytes32"},
+            {"name": "ipfsCid", "type": "string"},
+            {"name": "region", "type": "uint8"},
             {"name": "assetClass", "type": "uint8"},
         ],
         "outputs": [],
@@ -173,7 +173,6 @@ async def create_market(
     Returns the tx hash, or None if PREDICTION_MARKET_ADDRESS is not configured.
     Idempotent: MarketAlreadyExists is silently swallowed.
     """
-    import hashlib as _hl
 
     market_addr = os.getenv("PREDICTION_MARKET_ADDRESS", "").strip()
     if not market_addr:
@@ -190,11 +189,11 @@ async def create_market(
     # assetKey = keccak256(ticker) — matches oracle convention
     asset_key = w3.keccak(text=thesis.ticker_or_asset)
 
-    direction_int  = _DIRECTION_TO_UINT8[thesis.direction]
-    confidence_bp  = int(thesis.confidence_score * 10_000)  # 0-10000 basis points
+    direction_int = _DIRECTION_TO_UINT8[thesis.direction]
+    confidence_bp = int(thesis.confidence_score * 10_000)  # 0-10000 basis points
     # entryPrice: use live price from thesis if available, else 0 (oracle fills on resolve).
-    entry_price    = thesis.entry_price_1e8 if thesis.entry_price_1e8 is not None else 0
-    horizon_days   = int(thesis.time_horizon_days)
+    entry_price = thesis.entry_price_1e8 if thesis.entry_price_1e8 is not None else 0
+    horizon_days = int(thesis.time_horizon_days)
 
     _20_gwei = 20 * 10**9
     fee_history = await w3.eth.fee_history(5, "latest", [50])
@@ -212,19 +211,21 @@ async def create_market(
         confidence_bp,
         entry_price,
         horizon_days,
-    ).build_transaction({
-        "from":                 account.address,
-        "nonce":                nonce,
-        "maxFeePerGas":         max_fee,
-        "maxPriorityFeePerGas": max_priority,
-        "type":                 2,
-    })
+    ).build_transaction(
+        {
+            "from": account.address,
+            "nonce": nonce,
+            "maxFeePerGas": max_fee,
+            "maxPriorityFeePerGas": max_priority,
+            "type": 2,
+        }
+    )
     gas_estimate = await w3.eth.estimate_gas(txn)
     txn["gas"] = int(gas_estimate * 1.2)
 
-    signed   = account.sign_transaction(txn)
-    tx_hash  = await w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt  = await w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+    signed = account.sign_transaction(txn)
+    tx_hash = await w3.eth.send_raw_transaction(signed.raw_transaction)
+    receipt = await w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
 
     if receipt["status"] == 0:
         logger.error("createMarket reverted — tx=%s", tx_hash.hex())
@@ -282,13 +283,15 @@ async def stake_for_trace(
     max_fee = max(base_fee * 2 + max_priority, _20_gwei)
 
     nonce = await w3.eth.get_transaction_count(account.address)
-    txn = await token.functions.stake(amount).build_transaction({
-        "from": account.address,
-        "nonce": nonce,
-        "maxFeePerGas": max_fee,
-        "maxPriorityFeePerGas": max_priority,
-        "type": 2,
-    })
+    txn = await token.functions.stake(amount).build_transaction(
+        {
+            "from": account.address,
+            "nonce": nonce,
+            "maxFeePerGas": max_fee,
+            "maxPriorityFeePerGas": max_priority,
+            "type": 2,
+        }
+    )
     gas_estimate = await w3.eth.estimate_gas(txn)
     txn["gas"] = int(gas_estimate * 1.2)
 
@@ -326,9 +329,9 @@ async def record_trace(
     Falls back to a deterministic mock tx hash when the required env vars are
     not set — no network calls are made in that case.
     """
-    registry_addr  = os.getenv("REASONING_REGISTRY_ADDRESS", "").strip()
-    rpc_url        = os.getenv("ARC_RPC_URL", "").strip()
-    deployer_key   = os.getenv("ARC_DEPLOYER_PRIVATE_KEY", "").strip()
+    registry_addr = os.getenv("REASONING_REGISTRY_ADDRESS", "").strip()
+    rpc_url = os.getenv("ARC_RPC_URL", "").strip()
+    deployer_key = os.getenv("ARC_DEPLOYER_PRIVATE_KEY", "").strip()
 
     if not (registry_addr and rpc_url and deployer_key):
         tx = _mock_tx_hash(metadata)
@@ -345,9 +348,7 @@ async def record_trace(
         from web3.middleware import ExtraDataToPOAMiddleware
         from eth_account import Account
     except ImportError as exc:
-        raise ArcRecordError(
-            "web3 / eth_account not installed. Run: uv add web3"
-        ) from exc
+        raise ArcRecordError("web3 / eth_account not installed. Run: uv add web3") from exc
 
     w3 = AsyncWeb3(AsyncWeb3.AsyncHTTPProvider(rpc_url))
     # Arc testnet is a POA-compatible chain — inject middleware to handle
@@ -361,8 +362,8 @@ async def record_trace(
     )
 
     trace_bytes = _trace_hash_to_bytes32(metadata.trace_hash)
-    region_int  = _REGION_TO_UINT8[metadata.region]
-    asset_int   = _ASSET_CLASS_TO_UINT8[metadata.asset_class]
+    region_int = _REGION_TO_UINT8[metadata.region]
+    asset_int = _ASSET_CLASS_TO_UINT8[metadata.asset_class]
 
     # --- Optional: stake ROSETTA bond before recording ---
     stake_amount = int(os.getenv("ROSETTA_STAKE_AMOUNT", str(_DEFAULT_STAKE)))
@@ -379,21 +380,23 @@ async def record_trace(
         _20_gwei = 20 * 10**9
         fee_history = await w3.eth.fee_history(5, "latest", [50])
         base_fee = fee_history["baseFeePerGas"][-1]
-        max_priority = max(_20_gwei // 20, 1 * 10**9)          # 1 Gwei tip
-        max_fee = max(base_fee * 2 + max_priority, _20_gwei)    # at least 20 Gwei floor
+        max_priority = max(_20_gwei // 20, 1 * 10**9)  # 1 Gwei tip
+        max_fee = max(base_fee * 2 + max_priority, _20_gwei)  # at least 20 Gwei floor
 
         txn = await registry.functions.record(
             trace_bytes,
             metadata.ipfs_cid,
             region_int,
             asset_int,
-        ).build_transaction({
-            "from":              account.address,
-            "nonce":             nonce,
-            "maxFeePerGas":      max_fee,
-            "maxPriorityFeePerGas": max_priority,
-            "type":              2,  # EIP-1559
-        })
+        ).build_transaction(
+            {
+                "from": account.address,
+                "nonce": nonce,
+                "maxFeePerGas": max_fee,
+                "maxPriorityFeePerGas": max_priority,
+                "type": 2,  # EIP-1559
+            }
+        )
 
         # Estimate gas (denominated in USDC — 18 decimals as native gas on Arc,
         # NOT 6 decimals like ERC-20 USDC. Display in human USDC for observability.)
@@ -412,9 +415,7 @@ async def record_trace(
         receipt = await w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
 
         if receipt["status"] == 0:
-            raise ArcRecordError(
-                f"Transaction reverted on-chain. tx={tx_hash.hex()}"
-            )
+            raise ArcRecordError(f"Transaction reverted on-chain. tx={tx_hash.hex()}")
 
         hex_tx = tx_hash.hex()
         logger.info("Trace recorded on Arc ✅  tx=%s", hex_tx)
@@ -443,8 +444,6 @@ async def record_trace(
         # Detect TraceAlreadyExists revert — treat as idempotent success.
         if "TraceAlreadyExists" in str(exc) or "0x" in str(exc):
             sentinel = f"0xalready_{metadata.trace_hash[2:18]}"
-            logger.info(
-                "Trace already exists on-chain (idempotent) → %s", sentinel
-            )
+            logger.info("Trace already exists on-chain (idempotent) → %s", sentinel)
             return sentinel
         raise ArcRecordError(f"Arc record_trace failed: {exc}") from exc

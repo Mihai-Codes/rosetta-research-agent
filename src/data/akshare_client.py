@@ -44,6 +44,7 @@ async def get_stock_daily(ts_code: str, limit: int = 10) -> list[dict[str, Any]]
     code = _tushare_to_akshare(ts_code)
     try:
         import akshare as ak
+
         # Run blocking akshare call in executor to not block event loop
         loop = asyncio.get_event_loop()
         df = await loop.run_in_executor(
@@ -52,7 +53,7 @@ async def get_stock_daily(ts_code: str, limit: int = 10) -> list[dict[str, Any]]
                 symbol=code,
                 period="daily",
                 adjust="qfq",
-            )
+            ),
         )
         if df is None or df.empty:
             logger.warning("AKShare returned empty data for %s", ts_code)
@@ -73,13 +74,11 @@ async def get_stock_info(ts_code: str) -> dict[str, Any]:
     result: dict[str, Any] = {}
     try:
         import akshare as ak
+
         loop = asyncio.get_event_loop()
 
         # Individual stock fundamentals (PE, PB, market cap, etc.)
-        df = await loop.run_in_executor(
-            None,
-            lambda: ak.stock_individual_info_em(symbol=code)
-        )
+        df = await loop.run_in_executor(None, lambda: ak.stock_individual_info_em(symbol=code))
         if df is not None and not df.empty:
             # stock_individual_info_em returns a 2-col DataFrame (item, value)
             result = dict(zip(df.iloc[:, 0].astype(str), df.iloc[:, 1].astype(str)))
@@ -95,11 +94,9 @@ async def get_stock_news(ts_code: str, limit: int = 8) -> list[dict[str, Any]]:
     code = _tushare_to_akshare(ts_code)
     try:
         import akshare as ak
+
         loop = asyncio.get_event_loop()
-        df = await loop.run_in_executor(
-            None,
-            lambda: ak.stock_news_em(symbol=code)
-        )
+        df = await loop.run_in_executor(None, lambda: ak.stock_news_em(symbol=code))
         if df is None or df.empty:
             return []
         records = df.head(limit).to_dict(orient="records")

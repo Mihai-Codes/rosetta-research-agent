@@ -124,18 +124,27 @@ class ChinaAgent(RegionalAgent):
             if deepseek_key and not _use_groq:
                 # Probe DeepSeek to detect 402 (Insufficient Balance) before full analysis.
                 import httpx as _httpx
+
                 try:
                     _r = _httpx.post(
                         "https://api.deepseek.com/v1/chat/completions",
-                        json={"model": _DEEPSEEK_MODEL, "messages": [{"role": "user", "content": "hi"}], "max_tokens": 1},
+                        json={
+                            "model": _DEEPSEEK_MODEL,
+                            "messages": [{"role": "user", "content": "hi"}],
+                            "max_tokens": 1,
+                        },
                         headers={"Authorization": f"Bearer {deepseek_key}"},
                         timeout=10,
                     )
                     if _r.status_code == 402:
-                        logger.warning("DeepSeek 402 Insufficient Balance — falling back to Groq for CN desk")
+                        logger.warning(
+                            "DeepSeek 402 Insufficient Balance — falling back to Groq for CN desk"
+                        )
                         _use_groq = True
                 except Exception as _probe_exc:
-                    logger.warning("DeepSeek probe failed (%s) — falling back to Groq for CN desk", _probe_exc)
+                    logger.warning(
+                        "DeepSeek probe failed (%s) — falling back to Groq for CN desk", _probe_exc
+                    )
                     _use_groq = True
             if _use_groq:
                 # Try OpenRouter (DeepSeek V4 Flash, free tier) before falling back to Groq.
@@ -143,21 +152,34 @@ class ChinaAgent(RegionalAgent):
                 if openrouter_key:
                     logger.info("CN desk: using OpenRouter DeepSeek V4 Flash (free tier)")
                     from data.deepseek_client import DeepSeekClient as _DSC
+
                     model_client = _DSC(
                         api_key=openrouter_key,
                         base_url="https://openrouter.ai/api/v1",
                     )
                     if model_kwargs is None:
-                        model_kwargs = {"model": "deepseek/deepseek-v4-flash", "temperature": 0.2, "max_tokens": 2048}
+                        model_kwargs = {
+                            "model": "deepseek/deepseek-v4-flash",
+                            "temperature": 0.2,
+                            "max_tokens": 2048,
+                        }
                 else:
                     logger.warning("Using Groq fallback for CN desk")
                     model_client = adal.GroqAPIClient()  # type: ignore[attr-defined]
                     if model_kwargs is None:
-                        model_kwargs = {"model": "llama-3.3-70b-versatile", "temperature": 0.2, "max_tokens": 2048}
+                        model_kwargs = {
+                            "model": "llama-3.3-70b-versatile",
+                            "temperature": 0.2,
+                            "max_tokens": 2048,
+                        }
             else:
                 model_client = DeepSeekClient(api_key=deepseek_key)
                 if model_kwargs is None:
-                    model_kwargs = {"model": _DEEPSEEK_MODEL, "temperature": 0.2, "max_tokens": 2048}
+                    model_kwargs = {
+                        "model": _DEEPSEEK_MODEL,
+                        "temperature": 0.2,
+                        "max_tokens": 2048,
+                    }
         if model_kwargs is None:
             model_kwargs = {"model": _DEEPSEEK_MODEL, "temperature": 0.2, "max_tokens": 2048}
 
@@ -165,9 +187,7 @@ class ChinaAgent(RegionalAgent):
         super().__init__(model_client=model_client, model_kwargs=model_kwargs)
 
         # Rebuild generators with Chinese-language templates.
-        schema_str = json.dumps(
-            InvestmentThesis.model_json_schema(), ensure_ascii=False, indent=2
-        )
+        schema_str = json.dumps(InvestmentThesis.model_json_schema(), ensure_ascii=False, indent=2)
         cn_synthesis = _CN_SYNTHESIS_TEMPLATE.replace("{{schema}}", schema_str)
 
         self.sub_agent = adal.Generator(
@@ -237,6 +257,7 @@ class ChinaAgent(RegionalAgent):
         yf_ticker = _tushare_to_yf(ticker)  # 600519.SH → 600519.SS
         try:
             import yfinance as yf
+
             loop = asyncio.get_event_loop()
             yf_info = await loop.run_in_executor(
                 None,
@@ -253,11 +274,23 @@ class ChinaAgent(RegionalAgent):
             logger.debug("yfinance snapshot skipped for %s: %s", yf_ticker, _yf_exc)
             price_snapshot = {}
 
-        daily_summary = json.dumps(daily, ensure_ascii=False, default=str)[:3000] if daily else "[无日线数据]"
-        fina_summary = json.dumps(fina, ensure_ascii=False, default=str)[:2000] if fina else "[无财务数据]"
-        info_summary = json.dumps(info, ensure_ascii=False, default=str)[:1500] if info else "[无公司信息]"
-        news_summary = json.dumps(news, ensure_ascii=False, default=str)[:1500] if news else "[无新闻数据]"
-        price_summary = json.dumps(price_snapshot, ensure_ascii=False)[:500] if price_snapshot else "[无价格快照]"
+        daily_summary = (
+            json.dumps(daily, ensure_ascii=False, default=str)[:3000] if daily else "[无日线数据]"
+        )
+        fina_summary = (
+            json.dumps(fina, ensure_ascii=False, default=str)[:2000] if fina else "[无财务数据]"
+        )
+        info_summary = (
+            json.dumps(info, ensure_ascii=False, default=str)[:1500] if info else "[无公司信息]"
+        )
+        news_summary = (
+            json.dumps(news, ensure_ascii=False, default=str)[:1500] if news else "[无新闻数据]"
+        )
+        price_summary = (
+            json.dumps(price_snapshot, ensure_ascii=False)[:500]
+            if price_snapshot
+            else "[无价格快照]"
+        )
 
         fundamental_data = (
             f"【股票代码】{ticker} (yfinance: {yf_ticker}) | 数据来源: {source_used}\n"
