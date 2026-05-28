@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  agent:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # REQUIRED: At minimum, set GROQ_API_KEY for US + Crypto desks
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      # Optional: enables all 5 desks
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - TUSHARE_TOKEN=${TUSHARE_TOKEN:-}
+      - FINANCIAL_DATASETS_API_KEY=${FINANCIAL_DATASETS_API_KEY:-}
+      # Feature flags (disable for minimal deployment)
+      - ENABLE_IPFS=${ENABLE_IPFS:-false}
+      - ENABLE_ONCHAIN=${ENABLE_ONCHAIN:-false}
+      # IPFS (optional)
+      - PINATA_JWT=${PINATA_JWT:-}
+      - STORACHA_SIDECAR_URL=${STORACHA_SIDECAR_URL:-}
+      # On-chain (optional)
+      - ARC_RPC_URL=${ARC_RPC_URL:-}
+      - REASONING_REGISTRY_ADDRESS=${REASONING_REGISTRY_ADDRESS:-}
+      - ARC_DEPLOYER_PRIVATE_KEY=${ARC_DEPLOYER_PRIVATE_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; r = httpx.get('http://localhost:8000/health'); assert r.status_code == 200"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
