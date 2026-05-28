@@ -25,7 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import re
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 _TICKER_RE = re.compile(r"^[A-Za-z0-9._/-]{1,24}$")
 
@@ -83,6 +83,8 @@ VALID_DESKS = {"us", "china", "eu", "japan", "crypto"}
 
 
 class AnalyzeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     ticker: str = Field(..., description="Asset ticker symbol (e.g. AAPL, BTC, 600519.SH)")
     desk: str = Field(..., description="Regional desk: us, china, eu, japan, crypto")
     language_override: str | None = Field(
@@ -256,7 +258,7 @@ async def analyze(request: AnalyzeRequest):
             thesis_summary_en=thesis.thesis_summary_en,
             reasoning_blocks=[b.model_dump(mode="json") for b in thesis.reasoning_blocks],
             timestamp=thesis.timestamp.isoformat(),
-            model_used=getattr(agent, "model_name", "unknown"),
+            model_used=getattr(agent, "model_name", None) if isinstance(getattr(agent, "model_name", None), str) else "unknown",
             ipfs_cid=ipfs_cid,
             processing_time_ms=processing_time,
         )
